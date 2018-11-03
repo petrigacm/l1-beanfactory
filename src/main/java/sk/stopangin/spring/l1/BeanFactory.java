@@ -8,6 +8,8 @@ import java.util.Properties;
 public class BeanFactory {
     private Map<String, Object> context = new HashMap<>();
 
+
+
     void init() throws Exception {
              Properties contextDefinition = new Properties();
         contextDefinition.load(Runner.class.getResourceAsStream("/beans.properties"));
@@ -73,5 +75,6 @@ public class BeanFactory {
         }
         return sb.toString();
     }
+
 
 }
