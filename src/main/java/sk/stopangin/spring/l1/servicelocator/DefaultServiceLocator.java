@@ -11,7 +11,7 @@ public class DefaultServiceLocator {
         return beanClass.cast(register.get(beanClass));
     }
 
-    public void putBean(Class<?> registeringClass, Object o) {
+    public <T> void putBean(Class<T> registeringClass, T o) {
         register.put(registeringClass, o);
     }
 
