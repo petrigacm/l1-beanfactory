@@ -1,6 +1,6 @@
-package sk.stopangin.spring.l1;
+package sk.stopangin.spring.l1.dependencyinjection;
 
-import java.lang.reflect.Field;
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -8,39 +8,47 @@ import java.util.Properties;
 public class BeanFactory {
     private Map<String, Object> context = new HashMap<>();
 
-
-
-    void init() throws Exception {
-             Properties contextDefinition = new Properties();
+    public BeanFactory() throws Exception {
+        Properties contextDefinition = new Properties();
         contextDefinition.load(Runner.class.getResourceAsStream("/beans.properties"));
 
         for (Object propertyKey : contextDefinition.keySet()) {
             String beanName = propertyKey.toString();
             fillContextForBeanName(beanName, contextDefinition);
         }
-
     }
-
 
     private void fillContextForBeanName(String beanName, Properties contextDefinition) throws Exception {
         Object beanInstance;
+
         if (context.get(beanName) != null) {
             beanInstance = context.get(beanName);
             System.out.println(beanName + " already found in context, skipping.");
         } else {
-            beanInstance = Class.forName(String.valueOf(contextDefinition.get(beanName))).newInstance();
-            System.out.println("inserting " + beanName + " into context.");
+            Class<?> beanClass = Class.forName(String.valueOf(contextDefinition.get(beanName)));
+            Constructor<?> constructor = beanClass.getConstructors()[0];
+
+            Class<?>[] constructorParameterTypes = constructor.getParameterTypes();
+
+            Object[] parameters = new Object[constructorParameterTypes.length];
+
+            for (int i = 0; i < constructorParameterTypes.length; i++) {
+                Class<?> constructorParameterType = constructorParameterTypes[i];
+                String beanNameBasedOnParameterName = constructorParameterType.getSimpleName();
+
+                if (hasDefinition(contextDefinition, beanNameBasedOnParameterName)) {
+                    fillContextForBeanName(beanNameBasedOnParameterName, contextDefinition);
+                    parameters[i] = context.get(beanNameBasedOnParameterName);
+                } else {
+                    throw new RuntimeException("Cannot instantiate " + beanName + ". It has dependency on " + beanNameBasedOnParameterName + ", which is not defined in bean.properties file.");
+                }
+            }
+
+            beanInstance = constructor.newInstance(parameters);
+
+            System.out.println("Inserting " + beanName + " into context.");
             context.put(beanName, beanInstance);
             callAfterCreateListeners(beanInstance, beanName);
-        }
-        Field[] declaredFields = beanInstance.getClass().getDeclaredFields();
-        for (Field declaredField : declaredFields) {
-            String beanNameBasedOnFieldName = declaredField.getName();
-            if (isBeanNameDefinedInContext(contextDefinition, beanNameBasedOnFieldName)) {
-                declaredField.setAccessible(true);
-                fillContextForBeanName(beanNameBasedOnFieldName, contextDefinition);
-                declaredField.set(beanInstance, context.get(beanNameBasedOnFieldName));
-            }
         }
         callAfterPropertySetListener(beanInstance);
     }
@@ -57,7 +65,7 @@ public class BeanFactory {
         }
     }
 
-    private boolean isBeanNameDefinedInContext(Properties contextDefinition, String beanName) {
+    private boolean hasDefinition(Properties contextDefinition, String beanName) {
         return contextDefinition.get(beanName) != null;
     }
 
@@ -70,9 +78,11 @@ public class BeanFactory {
 
     private String getContextInfo() {
         StringBuilder sb = new StringBuilder();
+
         for (String key : context.keySet()) {
-            sb.append("[" + key + "]" + context.get(key).getClass());
+            sb.append("[").append(key).append("]").append(context.get(key).getClass());
         }
+
         return sb.toString();
     }
 

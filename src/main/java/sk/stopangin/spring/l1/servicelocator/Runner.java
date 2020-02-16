@@ -1,22 +1,18 @@
 package sk.stopangin.spring.l1.servicelocator;
 
-import sk.stopangin.spring.l1.DataService;
-import sk.stopangin.spring.l1.DataServiceImpl;
-import sk.stopangin.spring.l1.StatisticsService;
-import sk.stopangin.spring.l1.StatisticsServiceImpl;
+import sk.stopangin.spring.l1.ExpenseRepository;
+import sk.stopangin.spring.l1.ExpenseService;
 
 public class Runner {
     public static void main(String[] args) {
-        DefaultServiceLocator serviceLocator = DefaultServiceLocator.getInstance();
-        StatisticsService statisticsService = new StatisticsServiceImpl();
-        DataService dataService = new DataServiceImpl();
-        serviceLocator.putBean(DataService.class, dataService);
-        serviceLocator.putBean(StatisticsService.class, statisticsService);
-        StatisticFacadeImpl statisticFacade = new StatisticFacadeImpl();
-        serviceLocator.putBean(StatisticFacadeImpl.class, statisticFacade);
+        ServiceLocator serviceLocator = ServiceLocator.getInstance();
 
-        StatisticFacadeImpl bean = serviceLocator.getBean(StatisticFacadeImpl.class);
-        System.out.println(bean.computeStatistics());
+        serviceLocator.putBean(ExpenseRepository.class, new ExpenseRepositoryImpl());
+        serviceLocator.putBean(ExpenseService.class, new ExpenseServiceImpl());
+        serviceLocator.putBean(ExpensePrinter.class, new ExpensePrinter());
 
+        ExpensePrinter expensePrinter = serviceLocator.getBean(ExpensePrinter.class);
+
+        expensePrinter.printSumOfAllExpenses();
     }
 }
