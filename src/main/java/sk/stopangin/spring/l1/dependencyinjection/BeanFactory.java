@@ -18,6 +18,15 @@ public class BeanFactory {
         }
     }
 
+    public <T> T getBean(String name, Class<T> clazz) {
+        return context.entrySet().stream()
+                .filter(entry -> entry.getKey().equals(name))
+                .map(Map.Entry::getValue)
+                .map(clazz::cast)
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("No bean with name " + name + " found!"));
+    }
+
     private void fillContextForBeanName(String beanName, Properties contextDefinition) throws Exception {
         Object beanInstance;
 
