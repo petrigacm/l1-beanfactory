@@ -11,12 +11,10 @@ public class ExpenseRepositoryImpl implements ExpenseRepository {
 
     @Override
     public List<Expense> getAllExpenses() {
-        Random random = new Random(1324);
-
         return Arrays.asList(
-                new Expense(random.nextInt(1000)),
-                new Expense(random.nextInt(1000)),
-                new Expense(random.nextInt(1000))
+                new Expense("Shoes", 49.99),
+                new Expense("Milk", 0.89),
+                new Expense("Cinema tickets", 13.99)
         );
     }
 }

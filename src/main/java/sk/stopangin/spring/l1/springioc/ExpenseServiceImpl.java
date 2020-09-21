@@ -15,10 +15,10 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public Integer getSumOfAllExpenses() {
+    public double getSumOfAllExpenses() {
         return expenseRepository.getAllExpenses()
                 .stream()
-                .mapToInt(Expense::getAmount)
+                .mapToDouble(Expense::getAmount)
                 .sum();
     }
 }

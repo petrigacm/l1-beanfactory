@@ -10,12 +10,12 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public Integer getSumOfAllExpenses() {
+    public double getSumOfAllExpenses() {
         ExpenseRepository expenseRepository = ServiceLocator.getInstance().getBean(ExpenseRepository.class);
 
         return expenseRepository.getAllExpenses()
                 .stream()
-                .mapToInt(Expense::getAmount)
+                .mapToDouble(Expense::getAmount)
                 .sum();
     }
 }

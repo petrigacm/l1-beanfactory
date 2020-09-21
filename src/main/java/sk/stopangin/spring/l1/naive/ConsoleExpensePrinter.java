@@ -1,17 +1,18 @@
-package sk.stopangin.spring.l1.directapproach;
+package sk.stopangin.spring.l1.naive;
 
+import sk.stopangin.spring.l1.ExpensePrinter;
 import sk.stopangin.spring.l1.ExpenseService;
 
-public class ExpensePrinter {
+public class ConsoleExpensePrinter implements ExpensePrinter {
 
     private ExpenseService expenseService;
 
-    public ExpensePrinter() {
+    public ConsoleExpensePrinter() {
         this.expenseService = new ExpenseServiceImpl();
     }
 
     public void printSumOfAllExpenses() {
-        Integer sumOfAllExpenses = expenseService.getSumOfAllExpenses();
+        double sumOfAllExpenses = expenseService.getSumOfAllExpenses();
 
         System.out.println("Sum of all expenses: " + sumOfAllExpenses);
     }

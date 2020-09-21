@@ -1,5 +1,6 @@
 package sk.stopangin.spring.l1.dependencyinjection;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,74 +9,58 @@ import java.util.Properties;
 public class BeanFactory {
     private Map<String, Object> context = new HashMap<>();
 
-    public BeanFactory() throws Exception {
-        Properties contextDefinition = new Properties();
-        contextDefinition.load(Runner.class.getResourceAsStream("/beans.properties"));
+    public BeanFactory(String contextDefinitionFile) throws Exception {
+        Properties contextDefinition = loadContextDefinition(contextDefinitionFile);
 
+        initializeContext(contextDefinition);
+    }
+
+    private void initializeContext(Properties contextDefinition) throws Exception {
         for (Object propertyKey : contextDefinition.keySet()) {
             String beanName = propertyKey.toString();
-            fillContextForBeanName(beanName, contextDefinition);
+            initializeContextWithBean(beanName, contextDefinition);
         }
+    }
+
+    private void initializeContextWithBean(String beanName, Properties contextDefinition) throws Exception {
+        if (context.get(beanName) != null) {
+            return;
+        }
+
+        Class<?> beanClass = Class.forName(String.valueOf(contextDefinition.get(beanName)));
+        Constructor<?> constructor = beanClass.getConstructors()[0];
+
+        Class<?>[] parameterTypes = constructor.getParameterTypes();
+        Object[] constructorParameters = new Object[parameterTypes.length];
+
+        for (int i = 0; i < parameterTypes.length; i++) {
+            Class<?> parameterType = parameterTypes[i];
+            initializeContextWithBean(parameterType.getSimpleName(), contextDefinition);
+
+            Object beanInstance = context.get(parameterType.getSimpleName());
+            constructorParameters[i] = beanInstance;
+        }
+
+        Object beanInstance = constructor.newInstance(constructorParameters);
+
+        context.put(beanName, beanInstance);
+}
+
+    private Properties loadContextDefinition(String beanDefinitionFile) throws IOException {
+        Properties contextDefinition = new Properties();
+        contextDefinition.load(Runner.class.getResourceAsStream(beanDefinitionFile));
+
+        return contextDefinition;
     }
 
     public <T> T getBean(String name, Class<T> clazz) {
-        return context.entrySet().stream()
-                .filter(entry -> entry.getKey().equals(name))
-                .map(Map.Entry::getValue)
-                .map(clazz::cast)
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No bean with name " + name + " found!"));
-    }
-
-    private void fillContextForBeanName(String beanName, Properties contextDefinition) throws Exception {
-        Object beanInstance;
-
-        if (context.get(beanName) != null) {
-            beanInstance = context.get(beanName);
-            System.out.println(beanName + " already found in context, skipping.");
-        } else {
-            Class<?> beanClass = Class.forName(String.valueOf(contextDefinition.get(beanName)));
-            Constructor<?> constructor = beanClass.getConstructors()[0];
-
-            Class<?>[] constructorParameterTypes = constructor.getParameterTypes();
-
-            Object[] parameters = new Object[constructorParameterTypes.length];
-
-            for (int i = 0; i < constructorParameterTypes.length; i++) {
-                Class<?> constructorParameterType = constructorParameterTypes[i];
-                String beanNameBasedOnParameterName = constructorParameterType.getSimpleName();
-
-                if (hasDefinition(contextDefinition, beanNameBasedOnParameterName)) {
-                    fillContextForBeanName(beanNameBasedOnParameterName, contextDefinition);
-                    parameters[i] = context.get(beanNameBasedOnParameterName);
-                } else {
-                    throw new RuntimeException("Cannot instantiate " + beanName + ". It has dependency on " + beanNameBasedOnParameterName + ", which is not defined in bean.properties file.");
-                }
+        for (Map.Entry<String, Object> entry : context.entrySet()) {
+            if (entry.getKey().equals(name) && clazz.isAssignableFrom(entry.getValue().getClass())) {
+                return clazz.cast(entry.getValue());
             }
-
-            beanInstance = constructor.newInstance(parameters);
-
-            System.out.println("Inserting " + beanName + " into context.");
-            context.put(beanName, beanInstance);
-            callAfterCreateListeners(beanInstance, beanName);
         }
-        callAfterPropertySetListener(beanInstance);
-    }
 
-    private void callAfterCreateListeners(Object beanInstance, String beanName) {
-        if (beanInstance instanceof BeanNameAware) {
-            ((BeanNameAware) beanInstance).setBeanName(beanName);
-        }
-    }
-
-    private void callAfterPropertySetListener(Object beanInstance) {
-        if (beanInstance instanceof AfterPropertiesSetAware) {
-            ((AfterPropertiesSetAware) beanInstance).afterPropertiesSet();
-        }
-    }
-
-    private boolean hasDefinition(Properties contextDefinition, String beanName) {
-        return contextDefinition.get(beanName) != null;
+        throw new RuntimeException("No bean of type " + clazz.getName() + " with name " + name + " found!");
     }
 
     @Override
@@ -94,6 +79,4 @@ public class BeanFactory {
 
         return sb.toString();
     }
-
-
 }

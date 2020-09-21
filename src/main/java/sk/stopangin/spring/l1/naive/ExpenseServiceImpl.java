@@ -1,8 +1,10 @@
-package sk.stopangin.spring.l1.directapproach;
+package sk.stopangin.spring.l1.naive;
 
 import sk.stopangin.spring.l1.Expense;
 import sk.stopangin.spring.l1.ExpenseRepository;
 import sk.stopangin.spring.l1.ExpenseService;
+
+import java.util.List;
 
 public class ExpenseServiceImpl implements ExpenseService {
 
@@ -13,10 +15,10 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public Integer getSumOfAllExpenses() {
+    public double getSumOfAllExpenses() {
         return expenseRepository.getAllExpenses()
                 .stream()
-                .mapToInt(Expense::getAmount)
+                .mapToDouble(Expense::getAmount)
                 .sum();
     }
 }
